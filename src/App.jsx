@@ -219,7 +219,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>
-          <img src="/logo.png" alt="WhestBench Explorer" className="header-logo" /> WhestBench Explorer
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt="WhestBench Explorer" className="header-logo" /> WhestBench Explorer
         </h1>
         <p className="subtitle">
           Interactive visualization of MLPs for the{" "}
