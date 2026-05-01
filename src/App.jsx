@@ -223,7 +223,7 @@ export default function App() {
         </h1>
         <p className="subtitle">
           Interactive visualization of MLPs for the{" "}
-          <em>Mechanistic Estimation</em> challenge
+          <em>ARC Whitebox Estimation</em> Challenge
         </p>
       </header>
 
@@ -557,7 +557,7 @@ export default function App() {
           >
             ARC
           </a>{" "}
-          x AIcrowd Mechanistic Estimation Challenge
+          Whitebox Estimation Challenge
         </p>
       </footer>
 
