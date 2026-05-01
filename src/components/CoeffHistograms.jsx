@@ -3,7 +3,7 @@
  * Shows a mean ±σ band chart of weight values across layers.
  * Canvas-rendered for performance. Panel is collapsible.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CanvasTooltip from "./CanvasTooltip";
 import InfoTip from "./InfoTip";
 
@@ -13,14 +13,13 @@ const FILL_RGB = "91,123,168";
 export default function CoeffHistograms({ mlp }) {
   const canvasRef = useRef(null);
   const layoutRef = useRef(null);
-  const layerStatsRef = useRef([]);
   const [hover, setHover] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
 
   // Compute per-layer weight stats from mlp.weights
-  const layerStats = (() => {
+  const layerStats = useMemo(() => {
     if (!mlp || !mlp.weights) return [];
-    const { depth, width, weights } = mlp;
+    const { depth, weights } = mlp;
     const result = [];
     for (let l = 0; l < depth; l++) {
       // weights: Array<Float32Array>, one per layer, each length width×width
@@ -40,11 +39,7 @@ export default function CoeffHistograms({ mlp }) {
       result.push({ mean, std, min: mn, max: mx });
     }
     return result;
-  })();
-
-  useEffect(() => {
-    layerStatsRef.current = layerStats;
-  }, [layerStats]);
+  }, [mlp]);
 
   useEffect(() => {
     if (!canvasRef.current || layerStats.length === 0 || collapsed) return;
@@ -152,7 +147,7 @@ export default function CoeffHistograms({ mlp }) {
   }, [layerStats, collapsed]);
 
   const handleMouseMove = useCallback((e) => {
-    if (!layoutRef.current || layerStatsRef.current.length === 0) return;
+    if (!layoutRef.current || layerStats.length === 0) return;
     const { PAD, plotW, d } = layoutRef.current;
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -163,13 +158,13 @@ export default function CoeffHistograms({ mlp }) {
     } else {
       setHover(null);
     }
-  }, []);
+  }, [layerStats.length]);
 
   const handleMouseLeave = useCallback(() => setHover(null), []);
 
   if (!mlp) return null;
 
-  const hStats = hover ? layerStatsRef.current[hover.layer] : null;
+  const hStats = hover ? layerStats[hover.layer] : null;
 
   return (
     <div className="panel">

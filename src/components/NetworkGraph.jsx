@@ -10,7 +10,7 @@
  * - Interactivity: click neuron to highlight incoming/outgoing connections
  */
 import { dia, shapes } from "@joint/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Layout constants                                                   */

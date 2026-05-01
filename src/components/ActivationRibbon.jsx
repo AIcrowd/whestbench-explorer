@@ -3,18 +3,39 @@
  * Shows mean ±σ, ±2σ, and min/max as nested colored bands.
  * Canvas-rendered for performance.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CanvasTooltip from "./CanvasTooltip";
 import InfoTip from "./InfoTip";
 
 export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, width: n }) {
   const canvasRef = useRef(null);
   const layoutRef = useRef(null);
-  const aggRef = useRef([]);
   const [hover, setHover] = useState(null);
 
+  // Per-layer aggregate stats derived from the input arrays.
+  const agg = useMemo(() => {
+    if (!means || !stds) return [];
+    const layers = Math.min(d, means.length);
+    const result = [];
+    for (let l = 0; l < layers; l++) {
+      let sumMean = 0, sumStd = 0, mn = Infinity, mx = -Infinity;
+      for (let w = 0; w < n && w < means[l].length; w++) {
+        sumMean += means[l][w];
+        sumStd += stds[l][w];
+        const lo = mins ? mins[l][w] : means[l][w] - stds[l][w];
+        const hi = maxs ? maxs[l][w] : means[l][w] + stds[l][w];
+        if (lo < mn) mn = lo;
+        if (hi > mx) mx = hi;
+      }
+      const avgMean = sumMean / n;
+      const avgStd = sumStd / n;
+      result.push({ mean: avgMean, std: avgStd, min: mn, max: mx });
+    }
+    return result;
+  }, [means, stds, mins, maxs, d, n]);
+
   useEffect(() => {
-    if (!means || !stds || !canvasRef.current) return;
+    if (!canvasRef.current || agg.length === 0) return;
     const canvas = canvasRef.current;
     const container = canvas.parentElement;
     const W = container.offsetWidth || 600;
@@ -33,30 +54,12 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, W, H);
 
-    const layers = Math.min(d, means.length);
+    const layers = agg.length;
     const xScale = (l) => PAD.left + (l / Math.max(1, layers - 1)) * plotW;
     const yScale = (v) => PAD.top + (1 - (v + 1) / 2) * plotH; // [-1,1] → [plotH, 0]
 
     // Store layout for hover
     layoutRef.current = { PAD, plotW, layers };
-
-    // Compute per-layer aggregate stats
-    const agg = [];
-    for (let l = 0; l < layers; l++) {
-      let sumMean = 0, sumStd = 0, mn = Infinity, mx = -Infinity;
-      for (let w = 0; w < n && w < means[l].length; w++) {
-        sumMean += means[l][w];
-        sumStd += stds[l][w];
-        const lo = mins ? mins[l][w] : means[l][w] - stds[l][w];
-        const hi = maxs ? maxs[l][w] : means[l][w] + stds[l][w];
-        if (lo < mn) mn = lo;
-        if (hi > mx) mx = hi;
-      }
-      const avgMean = sumMean / n;
-      const avgStd = sumStd / n;
-      agg.push({ mean: avgMean, std: avgStd, min: mn, max: mx });
-    }
-    aggRef.current = agg;
 
     // Draw bands: min/max → ±2σ → ±σ → mean line
     const bands = [
@@ -116,10 +119,10 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
     ctx.fillText("+1", PAD.left - 4, yScale(1) + 3);
     ctx.fillText("0", PAD.left - 4, yScale(0) + 3);
     ctx.fillText("−1", PAD.left - 4, yScale(-1) + 3);
-  }, [means, stds, mins, maxs, d, n]);
+  }, [agg]);
 
   const handleMouseMove = useCallback((e) => {
-    if (!layoutRef.current || aggRef.current.length === 0) return;
+    if (!layoutRef.current || agg.length === 0) return;
     const { PAD, plotW, layers } = layoutRef.current;
     const rect = canvasRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -130,13 +133,13 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
     } else {
       setHover(null);
     }
-  }, []);
+  }, [agg.length]);
 
   const handleMouseLeave = useCallback(() => setHover(null), []);
 
   if (!means || !stds) return null;
 
-  const hAgg = hover ? aggRef.current[hover.layer] : null;
+  const hAgg = hover ? agg[hover.layer] : null;
 
   return (
     <div className="panel">

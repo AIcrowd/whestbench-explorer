@@ -284,7 +284,7 @@ export default function NetworkHeatmap({ mlp, means, activeLayer, onLayerClick }
       dims.cellW,
       dims.cellH
     );
-  }, [dims, activeLayer, d]);
+  }, [dims, activeLayer]);
 
   // Redraw overlay when activeLayer changes
   useEffect(() => {
@@ -375,7 +375,6 @@ export default function NetworkHeatmap({ mlp, means, activeLayer, onLayerClick }
   const hasConnections = connectionData?.hasIncoming || connectionData?.hasOutgoing;
   const TOOLTIP_W = hasConnections ? 340 : 200;
   const vpW = typeof window !== "undefined" ? window.innerWidth : 1920;
-  const vpH = typeof window !== "undefined" ? window.innerHeight : 1080;
   const tooltipLeft = hovered
     ? (hovered.pageX + TOOLTIP_W + 30 > vpW
       ? hovered.pageX - TOOLTIP_W - 24

@@ -4,13 +4,18 @@ export default function Controls({ params, onParamsChange }) {
   const [localSeed, setLocalSeed] = useState(String(params.seed));
   // Local slider state for instant visual feedback while debouncing actual generation
   const [localParams, setLocalParams] = useState(params);
+  // True while a debounced commit is pending. Tracked as state so we can read
+  // it during render to gate the prop→state sync below.
+  const [isDebouncing, setIsDebouncing] = useState(false);
   const debounceRef = useRef(null);
 
-  // When parent params change (e.g., tour mode), sync local state
-  if (params.width !== localParams.width || params.depth !== localParams.depth) {
-    if (!debounceRef.current) {
-      setLocalParams(params);
-    }
+  // When parent params change (e.g., tour mode), sync local state — but skip
+  // while a debounce is in flight so the user's in-progress edit isn't clobbered.
+  if (
+    (params.width !== localParams.width || params.depth !== localParams.depth) &&
+    !isDebouncing
+  ) {
+    setLocalParams(params);
   }
 
   const handleSliderChange = useCallback((key, value) => {
@@ -19,8 +24,10 @@ export default function Controls({ params, onParamsChange }) {
 
     // Debounce: wait 300ms after last change before triggering network generation
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    setIsDebouncing(true);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
+      setIsDebouncing(false);
       onParamsChange(next);
     }, 300);
   }, [localParams, onParamsChange]);

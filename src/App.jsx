@@ -14,7 +14,6 @@ import SignalHeatmap from "./components/SignalHeatmap";
 import StdHeatmap from "./components/StdHeatmap";
 import StepIndicator from "./components/StepIndicator";
 
-import { sampleMLP, forwardPass, sampleInputs } from "./mlp.js";
 import { perfEnd, perfStart } from "./perf";
 import { useMLPWorker } from "./useWorker";
 
